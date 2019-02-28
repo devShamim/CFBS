@@ -1,0 +1,8 @@
+@import "../mixins/functions";
+@import "../../../vendor_assets/css/bootstrap/config.bs";
+html{
+  font-size: 15px;
+}
+a{
+  transition: $transition-base;
+}
