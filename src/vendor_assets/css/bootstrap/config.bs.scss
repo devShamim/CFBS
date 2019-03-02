@@ -93,7 +93,9 @@ $display4-weight:             500;
 
 
 // btn
-$btn-font-weight:             700;
+$btn-font-weight:             600;
+$btn-font-size:               0.933rem;
+$btn-font-size-lg:            1.133rem;
 
 $btn-padding-x:               1.33rem;
 $btn-padding-x-sm:            1rem;
@@ -216,5 +218,9 @@ $badge-font-size:             0.8rem;
 $badge-font-weight:           600;
 $badge-border-radius:         0.133rem;
 $badge-pill-padding-x:        0.86rem;
+
+//modal
+$modal-md:                          420px;
+
 
 @import "scss/variables";

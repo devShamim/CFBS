@@ -13,7 +13,7 @@ var gulp = require('gulp'),
     rename = require('gulp-rename'),
     nunjucks = require('gulp-nunjucks-render'),
     tidyHtml = require('gulp-remove-empty-lines'),
-    formatHtml = require('gulp-html-bea, utify'),
+    formatHtml = require('gulp-html-beautify'),
     gulpfilter = require('gulp-filter'),
     tinypngs = require('gulp-tinypng-compress'),
     projectName = require('./package.json').name;
@@ -196,7 +196,7 @@ gulp.task('distAssets', function () {
     return merge(va, ta, fonts, moveHtml);
 });
 
-//Demo eject
+// eject demo
 gulp.task('eject:demo', ['distAssets'], function () {
     gulp.src('dist/*.html')
         .pipe(gulpInject(
