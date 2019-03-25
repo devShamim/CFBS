@@ -3,6 +3,8 @@ var gulp = require('gulp'),
     sass = require('gulp-sass'),
     uglify = require('gulp-uglify'),
     cleancss = require('gulp-clean-css'),
+    gutil = require('gulp-util'),
+    plumber = require('gulp-plumber'),
     concat = require('gulp-concat'),
     sourcemaps = require('gulp-sourcemaps'),
     browserSync = require('browser-sync').create(),
@@ -82,10 +84,12 @@ gulp.task('serve', function () {
 // Nunjucks Compiler
 gulp.task('compile-nunjucks', function () {
     return gulp.src('./src/pages/*.njk')
+        .pipe(plumber(function (error) {
+            gutil.log(error.message);
+            this.emit('end');
+        }))
         .pipe(nunjucks({
             path: ['./src/structure', './src/pages']
-        }).on('error', function (e) {
-            console.log(e);
         }))
         .pipe(gulp.dest('./src/'))
         .pipe(browserSync.reload({stream: true}));
