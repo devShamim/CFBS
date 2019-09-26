@@ -32,5 +32,8 @@
     "stream-series": "^0.1.1"
   },
   "author": "AazzTech",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "imagemin": "^7.0.0"
+  }
 }

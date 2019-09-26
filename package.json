@@ -34,5 +34,8 @@
     "util": "^0.11.1"
   },
   "author": "AazzTech",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "imagemin": "^7.0.0"
+  }
 }

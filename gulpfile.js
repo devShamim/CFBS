@@ -1,29 +1,31 @@
 /* import necessary npm packages */
-var gulp = require('gulp'),
-    rtlcss = require('gulp-rtlcss'),
-    sass = require('gulp-sass'),
-    uglify = require('gulp-uglify'),
-    cleancss = require('gulp-clean-css'),
-    gutil = require('gulp-util'),
-    plumber = require('gulp-plumber'),
-    concat = require('gulp-concat'),
-    sourcemaps = require('gulp-sourcemaps'),
-    browserSync = require('browser-sync').create(),
-    autoPrefixer = require('gulp-autoprefixer'),
-    gulpInject = require('gulp-inject'),
-    series = require("stream-series"),
-    merge = require('merge-stream'),
-    rename = require('gulp-rename'),
-    nunjucks = require('gulp-nunjucks-render'),
-    tidyHtml = require('gulp-remove-empty-lines'),
-    formatHtml = require('gulp-html-beautify'),
-    gulpfilter = require('gulp-filter'),
-    tinypngs = require('gulp-tinypng-compress'),
-    projectName = require('./package.json').name;
+var gulp                    = require('gulp'),
+    rtlcss                  = require('gulp-rtlcss'),
+    sass                    = require('gulp-sass'),
+    uglify                  = require('gulp-uglify'),
+    cleancss                = require('gulp-clean-css'),
+    gutil                   = require('gulp-util'),
+    plumber                 = require('gulp-plumber'),
+    concat                  = require('gulp-concat'),
+    sourcemaps              = require('gulp-sourcemaps'),
+    browserSync             = require('browser-sync').create(),
+    autoPrefixer            = require('gulp-autoprefixer'),
+    gulpInject              = require('gulp-inject'),
+    series                  = require("stream-series"),
+    merge                   = require('merge-stream'),
+    rename                  = require('gulp-rename'),
+    nunjucks                = require('gulp-nunjucks-render'),
+    tidyHtml                = require('gulp-remove-empty-lines'),
+    formatHtml              = require('gulp-html-beautify'),
+    gulpfilter              = require('gulp-filter'),
+    imagemin                = require('gulp-imagemin'),
+    imageminJpegRecompress  = require('imagemin-jpeg-recompress'),
+    pngquant                = require('imagemin-pngquant'),
+    projectName             = require('./package.json').name;
 
 // Assets sources
-var vendor = './src/vendor_assets',
-    theme = './src/theme_assets',
+var vendor = './src/assets/vendor_assets',
+    theme = './src/assets/theme_assets',
     vendorAssets = gulp.src(
         [
             vendor + '/css/bootstrap/*.css',
@@ -57,10 +59,10 @@ function sassCompiler(src, dest) {
 }
 
 // bootstrap sass compiler
-gulp.task('sass:bs', sassCompiler('./src/vendor_assets/css/bootstrap/bootstrap.scss', './src/vendor_assets/css/bootstrap/'));
+gulp.task('sass:bs', sassCompiler('./src/assets/vendor_assets/css/bootstrap/bootstrap.scss', './src/assets/vendor_assets/css/bootstrap/'));
 
 // themes sass compiler
-gulp.task('sass:theme', sassCompiler('./src/theme_assets/sass/style.scss', './src'));
+gulp.task('sass:theme', sassCompiler('./src/assets/theme_assets/sass/style.scss', './src'));
 
 /* gulp asset injection */
 gulp.task('inject', function (done) {
@@ -96,29 +98,37 @@ gulp.task('compile-nunjucks', function (done) {
     done();
 });
 
-// image optimization task
-gulp.task('imgoptimize', function (done) {
+
+// Image minifier - compresses images
+gulp.task('minIMG', function() {
     var svgFilter = gulpfilter(['**/*.svg'], {restore: true});
-    gulp.src('./src/img/**')
+    return gulp.src('./src/img/**')
         .pipe(svgFilter)
         .pipe(cleancss())
         .pipe(gulp.dest('dist/img/svg'))
         .pipe(svgFilter.restore)
-        .pipe(
-            tinypngs({
-                key: 'gu3SUgQf1WyxcB3_xxRmIEMdt7zWZeh_', // TO KNOW MORE SEE THE DOCUMENTATION
-                sigFile: 'src/images/.tinypng-sigs',
-                log: true
-            })
-        )
+        .pipe(cache(imagemin([
+            imagemin.gifsicle({interlaced: true}),
+            imagemin.jpegtran({progressive: true}),
+            imageminJpegRecompress({
+                loops: 5,
+                min: 65,
+                max: 70,
+                quality:'medium'
+            }),
+            imagemin.svgo(),
+            imagemin.optipng({optimizationLevel: 3}),
+            pngquant({quality: '65-70', speed: 5})
+        ],{
+            verbose: true
+        })))
         .pipe(gulp.dest('./dist/img'));
-    done();
 });
 
 // default gulp task
 gulp.task('default', gulp.series('sass:theme', 'inject', 'compile-nunjucks', 'serve', function (done) {
-    gulp.watch('./src/theme_assets/sass/**/*', gulp.series('sass:theme'));
-    gulp.watch('./src/vendor_assets/css/bootstrap/*.scss', gulp.series('sass:bs'));
+    gulp.watch('./src/assets/theme_assets/sass/**/*', gulp.series('sass:theme'));
+    gulp.watch('./src/assets/vendor_assets/css/bootstrap/*.scss', gulp.series('sass:bs'));
     gulp.watch(['./src/structure/**/*', './src/pages/**'], gulp.series('compile-nunjucks'));
     gulp.watch('./src/**/*.js', browserSync.reload);
     done();
@@ -140,7 +150,7 @@ gulp.task('move:files', function (done) {
 });
 
 //compile for tf
-gulp.task('compileStyleForTf', sassCompiler('./src/theme_assets/sass/style.scss', projectName+'/src'));
+gulp.task('compileStyleForTf', sassCompiler('./src/assets/theme_assets/sass/style.scss', projectName+'/src'));
 
 // eject themeforrest version
 gulp.task("eject:tf", gulp.series('move:files', 'compileStyleForTf', function (done) {
@@ -197,7 +207,7 @@ gulp.task('distAssets', function (done) {
         .pipe(concat('style.css'))
         .pipe(gulp.dest('./dist'));
 
-    var fonts = gulp.src('./src/vendor_assets/fonts/**')
+    var fonts = gulp.src('./src/assets/vendor_assets/fonts/**')
         .pipe(gulp.dest('dist/fonts'));
 
     var moveHtml = gulp.src('src/*.html')
@@ -224,7 +234,7 @@ gulp.task('rtl', function (done) {
     var bootstrap = gulpfilter('**/bootstrap.css', {restore: true}),
         style = gulpfilter('**/style.css', {restore: true});
 
-    gulp.src(['./src/vendor_assets/css/bootstrap/bootstrap.css', './src/style.css'])
+    gulp.src(['./src/assets/vendor_assets/css/bootstrap/bootstrap.css', './src/style.css'])
         .pipe(rtlcss({
             'stringMap': [
                 {
@@ -251,7 +261,7 @@ gulp.task('rtl', function (done) {
         }))
         .pipe(bootstrap)
         .pipe(rename({suffix: '-rtl', extname: '.css'}))
-        .pipe(gulp.dest('./src/vendor_assets/css/bootstrap/'))
+        .pipe(gulp.dest('./src/assets/vendor_assets/css/bootstrap/'))
         .pipe(bootstrap.restore)
         .pipe(style)
         .pipe(rename({suffix: '-rtl', extname: '.css'}))

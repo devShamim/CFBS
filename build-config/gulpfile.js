@@ -1,28 +1,30 @@
 /* import necessary npm packages */
-var gulp = require('gulp'),
-    rtlcss = require('gulp-rtlcss'),
-    sass = require('gulp-sass'),
-    uglify = require('gulp-uglify'),
-    cleancss = require('gulp-clean-css'),
-    concat = require('gulp-concat'),
-    sourcemaps = require('gulp-sourcemaps'),
-    browserSync = require('browser-sync').create(),
-    autoPrefixer = require('gulp-autoprefixer'),
-    gulpInject = require('gulp-inject'),
-    series = require("stream-series"),
-    merge = require('merge-stream'),
-    rename = require('gulp-rename'),
-    nunjucks = require('gulp-nunjucks-render'),
-    tidyHtml = require('gulp-htmltidy'),
-    formatHtml = require('gulp-html-beautify'),
-    tinypngs = require('gulp-tinypng-compress'),
-    gulpfilter = require('gulp-filter'),
-    del = require('gulp-clean');
+var gulp                    = require('gulp'),
+    rtlcss                  = require('gulp-rtlcss'),
+    sass                    = require('gulp-sass'),
+    uglify                  = require('gulp-uglify'),
+    cleancss                = require('gulp-clean-css'),
+    concat                  = require('gulp-concat'),
+    sourcemaps              = require('gulp-sourcemaps'),
+    browserSync             = require('browser-sync').create(),
+    autoPrefixer            = require('gulp-autoprefixer'),
+    gulpInject              = require('gulp-inject'),
+    series                  = require("stream-series"),
+    merge                   = require('merge-stream'),
+    rename                  = require('gulp-rename'),
+    nunjucks                = require('gulp-nunjucks-render'),
+    tidyHtml                = require('gulp-htmltidy'),
+    formatHtml              = require('gulp-html-beautify'),
+    imagemin                = require('gulp-imagemin'),
+    imageminJpegRecompress  = require('imagemin-jpeg-recompress'),
+    pngquant                = require('imagemin-pngquant'),
+    gulpfilter              = require('gulp-filter'),
+    del                     = require('gulp-clean');
 
 
 // Assets sources
-var vendor = './src/vendor_assets',
-    theme = './src/theme_assets',
+var vendor = './src/assets/vendor_assets',
+    theme = './src/assets/theme_assets',
     vendorAssets = gulp.src(
         [
             vendor+'/css/bootstrap/*.css',
@@ -42,21 +44,29 @@ var vendor = './src/vendor_assets',
             theme+'/js/*.js'
         ], {read: true});
 
-// image optimization task
-gulp.task('imgoptimize', function () {
+// Image minifier - compresses images
+gulp.task('minIMG', function() {
     var svgFilter = gulpfilter(['**/*.svg'], {restore: true});
-    gulp.src('./src/img/**')
+    return gulp.src('./src/img/**')
         .pipe(svgFilter)
         .pipe(cleancss())
-        .pipe(gulp.dest('dist/img'))
+        .pipe(gulp.dest('dist/img/svg'))
         .pipe(svgFilter.restore)
-        .pipe(
-            tinypngs({
-                key: 'ngAww6EW_7Y43VC543b8K74uvgBiDJqK', // TO KNOW MORE SEE THE DOCUMENTATION
-                sigFile: 'src/images/.tinypng-sigs',
-                log: true
-            })
-        )
+        .pipe(cache(imagemin([
+            imagemin.gifsicle({interlaced: true}),
+            imagemin.jpegtran({progressive: true}),
+            imageminJpegRecompress({
+                loops: 5,
+                min: 65,
+                max: 70,
+                quality:'medium'
+            }),
+            imagemin.svgo(),
+            imagemin.optipng({optimizationLevel: 3}),
+            pngquant({quality: '65-70', speed: 5})
+        ],{
+            verbose: true
+        })))
         .pipe(gulp.dest('./dist/img'));
 });
 
@@ -75,10 +85,10 @@ function sassCompiler(src, dest) {
 }
 
 // bootstrap sass compiler
-gulp.task('scss:bs', sassCompiler('./src/vendor_assets/css/bootstrap/bootstrap.scss', './src/vendor_assets/css/bootstrap/'));
+gulp.task('scss:bs', sassCompiler('./src/assets/vendor_assets/css/bootstrap/bootstrap.scss', './src/assets/vendor_assets/css/bootstrap/'));
 
 // themes sass compiler
-gulp.task('scss:theme', sassCompiler('./src/theme_assets/sass/style.scss', './src'));
+gulp.task('scss:theme', sassCompiler('./src/assets/theme_assets/sass/style.scss', './src'));
 
 /* gulp asset injection */
 gulp.task('inject', function () {
@@ -99,17 +109,17 @@ gulp.task('serve', function() {
 
 // default gulp task
 gulp.task('default', ['scss:theme', 'inject', 'serve'] , function () {
-    gulp.watch('./src/theme_assets/sass/**/*', ['scss:theme']);
-    gulp.watch('./src/vendor_assets/css/bootstrap/*.scss', ['scss:bs']);
+    gulp.watch('./src/assets/theme_assets/sass/**/*', ['scss:theme']);
+    gulp.watch('./src/assets/vendor_assets/css/bootstrap/*.scss', ['scss:bs']);
     gulp.watch('./src/**/*.js', browserSync.reload);
 });
 
 // gulp build task: generate an upladable version of the template
 var filesToMove = [
     vendor+'/**',
-    '!src/vendor_assets/css/**/!(*.css)',
+    '!src/assets/vendor_assets/css/**/!(*.css)',
     theme+'/**',
-    '!src/theme_assets/{sass,sass/**}',
+    '!src/assets/theme_assets/{sass,sass/**}',
     './src/*.html', './src/*.css',
     './src/img/**'
 ];
@@ -158,7 +168,7 @@ gulp.task('distAssets', function () {
         .pipe(concat('style.css'))
         .pipe(gulp.dest('./dist'));
 
-    var fonts = gulp.src('./src/vendor_assets/fonts/**')
+    var fonts = gulp.src('./src/assets/vendor_assets/fonts/**')
         .pipe(gulp.dest('dist/fonts'));
 
     var moveHtml = gulp.src('src/*.html')
@@ -168,7 +178,7 @@ gulp.task('distAssets', function () {
 });
 
 //'imgoptimize'
-gulp.task('build:optimize', ['distAssets', 'imgoptimize'], function () {
+gulp.task('build:optimize', ['distAssets', 'minIMG'], function () {
     gulp.src('dist/*.html')
         .pipe(gulpInject(
             gulp.src(['dist/css/*.css', 'dist/js/*.js', 'dist/*.css']),
@@ -182,7 +192,7 @@ gulp.task('rtl', function () {
     var bootstrap = gulpfilter('**/bootstrap.css', {restore: true}),
         style = gulpfilter('**/style.css', {restore: true});
 
-    gulp.src(['./src/vendor_assets/css/bootstrap/bootstrap.css', './src/style.css'])
+    gulp.src(['./src/assets/vendor_assets/css/bootstrap/bootstrap.css', './src/style.css'])
         .pipe(rtlcss({
             'stringMap': [
                 {
@@ -209,7 +219,7 @@ gulp.task('rtl', function () {
         }))
         .pipe(bootstrap)
         .pipe(rename({suffix: '-rtl', extname: '.css'}))
-        .pipe(gulp.dest('./src/vendor_assets/css/bootstrap/'))
+        .pipe(gulp.dest('./src/assets/vendor_assets/css/bootstrap/'))
         .pipe(bootstrap.restore)
         .pipe(style)
         .pipe(rename({suffix: '-rtl', extname: '.css'}))
