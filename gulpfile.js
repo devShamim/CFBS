@@ -18,9 +18,9 @@ var gulp                    = require('gulp'),
     tidyHtml                = require('gulp-remove-empty-lines'),
     formatHtml              = require('gulp-html-beautify'),
     gulpfilter              = require('gulp-filter'),
-    imagemin                = require('gulp-imagemin'),
+    /*imagemin                = require('gulp-imagemin'),
     imageminJpegRecompress  = require('imagemin-jpeg-recompress'),
-    pngquant                = require('imagemin-pngquant'),
+    pngquant                = require('imagemin-pngquant'),*/
     projectName             = require('./package.json').name;
 
 // Assets sources
@@ -100,9 +100,9 @@ gulp.task('compile-nunjucks', function (done) {
 
 
 // Image minifier - compresses images
-gulp.task('minIMG', function() {
-    var svgFilter = gulpfilter(['**/*.svg'], {restore: true});
-    return gulp.src('./src/img/**')
+/*gulp.task('minIMG', function() {
+    var svgFilter = gulpfilter(['**!/!*.svg'], {restore: true});
+    return gulp.src('./src/img/!**')
         .pipe(svgFilter)
         .pipe(cleancss())
         .pipe(gulp.dest('dist/img/svg'))
@@ -123,7 +123,7 @@ gulp.task('minIMG', function() {
             verbose: true
         })))
         .pipe(gulp.dest('./dist/img'));
-});
+});*/
 
 // default gulp task
 gulp.task('default', gulp.series('sass:theme', 'inject', 'compile-nunjucks', 'serve', function (done) {
