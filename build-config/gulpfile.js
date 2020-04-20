@@ -15,10 +15,10 @@ var gulp                    = require('gulp'),
     nunjucks                = require('gulp-nunjucks-render'),
     tidyHtml                = require('gulp-htmltidy'),
     formatHtml              = require('gulp-html-beautify'),
-    imagemin                = require('gulp-imagemin'),
+    /*imagemin                = require('gulp-imagemin'),
     imageminJpegRecompress  = require('imagemin-jpeg-recompress'),
     pngquant                = require('imagemin-pngquant'),
-    gulpfilter              = require('gulp-filter'),
+    gulpfilter              = require('gulp-filter'),*/
     del                     = require('gulp-clean');
 
 
@@ -32,9 +32,6 @@ var vendor = './src/assets/vendor_assets',
             vendor+'/js/jquery/*.js',
             vendor+'/js/bootstrap/popper.js',
             vendor+'/js/bootstrap/bootstrap.min.js',
-            vendor+'/js/revolution/jquery.themepunch.tools.min.js',
-            vendor+'/js/revolution/jquery.themepunch.revolution.min.js',
-            vendor+'/js/revolution/extensions/*.js',
             vendor+'/js/*.js'
         ], {read: true}),
 
@@ -45,9 +42,9 @@ var vendor = './src/assets/vendor_assets',
         ], {read: true});
 
 // Image minifier - compresses images
-gulp.task('minIMG', function() {
-    var svgFilter = gulpfilter(['**/*.svg'], {restore: true});
-    return gulp.src('./src/img/**')
+/*gulp.task('minIMG', function() {
+    var svgFilter = gulpfilter(['**!/!*.svg'], {restore: true});
+    return gulp.src('./src/img/!**')
         .pipe(svgFilter)
         .pipe(cleancss())
         .pipe(gulp.dest('dist/img/svg'))
@@ -68,11 +65,11 @@ gulp.task('minIMG', function() {
             verbose: true
         })))
         .pipe(gulp.dest('./dist/img'));
-});
+});*/
 
 /* scss to css compilation */
 function sassCompiler(src, dest) {
-    return function () {
+    return function (done) {
         gulp.src(src)
             .pipe(sourcemaps.init())
             .pipe(sass({outputStyle: 'expanded'}).on('error', sass.logError))
@@ -81,6 +78,7 @@ function sassCompiler(src, dest) {
             .pipe(browserSync.reload({
                 stream: true
             }));
+        done();
     }
 }
 
@@ -91,28 +89,30 @@ gulp.task('scss:bs', sassCompiler('./src/assets/vendor_assets/css/bootstrap/boot
 gulp.task('scss:theme', sassCompiler('./src/assets/theme_assets/sass/style.scss', './src'));
 
 /* gulp asset injection */
-gulp.task('inject', function () {
+gulp.task('inject', function (done) {
     gulp.src('./src/*.html')
         .pipe(gulpInject(series(vendorAssets, themeAssets), { relative: true }))
         .pipe(gulp.dest('./src/'))
+    done();
 });
 
 /* gulp serve content in browser */
-gulp.task('serve', function() {
+gulp.task('serve', function(done) {
     browserSync.init({
         server: {
             baseDir: './src'
         },
         port: 3010
     })
+    done();
 });
 
 // default gulp task
-gulp.task('default', ['scss:theme', 'inject', 'serve'] , function () {
-    gulp.watch('./src/assets/theme_assets/sass/**/*', ['scss:theme']);
-    gulp.watch('./src/assets/vendor_assets/css/bootstrap/*.scss', ['scss:bs']);
+gulp.task('default', gulp.series('scss:theme', 'inject', 'serve', function () {
+    gulp.watch('./src/assets/theme_assets/sass/**/*', gulp.series('scss:theme'));
+    gulp.watch('./src/assets/vendor_assets/css/bootstrap/*.scss', gulp.series('scss:bs'));
     gulp.watch('./src/**/*.js', browserSync.reload);
-});
+}));
 
 // gulp build task: generate an upladable version of the template
 var filesToMove = [
@@ -123,15 +123,16 @@ var filesToMove = [
     './src/*.html', './src/*.css',
     './src/img/**'
 ];
-gulp.task('move', function(){
+gulp.task('move', function(done){
     gulp.src(filesToMove, {base: './src'})
         .pipe(gulp.dest('build'));
+    done();
 });
 
-gulp.task('build', ['scss:bs','scss:theme', 'move']);
+gulp.task('build', gulp.series('scss:bs','scss:theme', 'move'));
 
 // eject optimized  version for demo
-gulp.task('distAssets', function () {
+gulp.task('distAssets', function (done) {
     var jsFilter = gulpfilter(['**/*.js'], {restore: true}),
         cssFilter = gulpfilter(['**/*css'], {restore: true}),
         thmis = gulpfilter(['**/*.js'], {restore: true});
@@ -175,20 +176,22 @@ gulp.task('distAssets', function () {
         .pipe(gulp.dest('dist'));
 
     return merge(va, ta, fonts, moveHtml);
+    done();
 });
 
 //'imgoptimize'
-gulp.task('build:optimize', ['distAssets', 'minIMG'], function () {
+gulp.task('build:optimize', gulp.series('distAssets', function (done) {
     gulp.src('dist/*.html')
         .pipe(gulpInject(
             gulp.src(['dist/css/*.css', 'dist/js/*.js', 'dist/*.css']),
             {relative: true}
         ))
         .pipe(gulp.dest('dist'));
-});
+    done();
+}));
 
 //rtl css generator
-gulp.task('rtl', function () {
+gulp.task('rtl', function (done) {
     var bootstrap = gulpfilter('**/bootstrap.css', {restore: true}),
         style = gulpfilter('**/style.css', {restore: true});
 
@@ -224,4 +227,5 @@ gulp.task('rtl', function () {
         .pipe(style)
         .pipe(rename({suffix: '-rtl', extname: '.css'}))
         .pipe(gulp.dest('./src'));
+    done();
 });
