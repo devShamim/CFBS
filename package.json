@@ -36,6 +36,7 @@
   "author": "AazzTech",
   "license": "ISC",
   "dependencies": {
+    "gulp-merge-media-queries": "^0.2.1",
     "imagemin": "^7.0.0"
   }
 }

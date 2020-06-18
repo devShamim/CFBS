@@ -18,6 +18,7 @@ var gulp                    = require('gulp'),
     tidyHtml                = require('gulp-remove-empty-lines'),
     formatHtml              = require('gulp-html-beautify'),
     gulpfilter              = require('gulp-filter'),
+    mergeMQ                 = require('gulp-merge-media-queries');
     /*imagemin                = require('gulp-imagemin'),
     imageminJpegRecompress  = require('imagemin-jpeg-recompress'),
     pngquant                = require('imagemin-pngquant'),*/
@@ -50,6 +51,7 @@ function sassCompiler(src, dest) {
             .pipe(sourcemaps.init())
             .pipe(sass({outputStyle: 'expanded'}).on('error', sass.logError))
             .pipe(autoPrefixer('last 10 versions'))
+            .pipe(mergeMQ())
             .pipe(sourcemaps.write('maps'))
             .pipe(gulp.dest(dest))
             .pipe(browserSync.reload({
