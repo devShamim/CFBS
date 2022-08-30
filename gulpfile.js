@@ -15,11 +15,12 @@ const series = require('stream-series');
 const merge = require('merge-stream');
 const rename = require('gulp-rename');
 const nunjucks = require('gulp-nunjucks-render');
-const formatHtml = require('gulp-html-beautify');
 const gulpfilter = require('gulp-filter');
 const mergeMQ = require('gulp-merge-media-queries');
 const projectName = require('./package.json').name;
 const dom  = require('gulp-dom');
+const beautify = require('gulp-beautify');
+
 
 // Assets sources
 const vendor = './src/assets/vendor_assets';
@@ -40,7 +41,7 @@ const themeAssets = gulp.src(['src/style.css', `${theme}/js/*.js`], { read: true
 
 /* scss to css compilation */
 function sassCompiler(src, dest) {
-        return async function(done) {
+        return async function() {
                 gulp.src(src)
                         .pipe(sourcemaps.init())
                         .pipe(sass({ outputStyle: 'expanded' }).on('error', sass.logError))
@@ -53,8 +54,6 @@ function sassCompiler(src, dest) {
                                         stream: true,
                                 })
                         );
-
-                        done();
         };
 }
 
@@ -105,11 +104,7 @@ gulp.task('compile-nunjucks', function(done) {
                                 path: ['./src/structure', './src/pages'],
                         })
                 )
-                .pipe(
-                        formatHtml({
-                                indentSize: 4,
-                        })
-                )
+                .pipe(beautify.html({ indent_size: 2 }))
                 .pipe(gulp.dest('./src/'))
                 .pipe(browserSync.reload({ stream: true }));
         done();
@@ -144,12 +139,8 @@ gulp.task(
         'eject:tf',
         gulp.series('move:files', 'compileStyleForTf', function(done) {
                 gulp.src('./src/*.html')
-                        .pipe(
-                                formatHtml({
-                                        indentSize: 4,
-                                })
-                        )
-                        .pipe(gulp.dest(`${projectName}/src`));
+                .pipe(beautify.html({ indent_size: 3 }))
+                .pipe(gulp.dest(`${projectName}/src`));
 
                 gulp.src('./build-config/**').pipe(gulp.dest(`./${projectName}`));
 
